@@ -3,7 +3,7 @@ import config from "./config/config.js";
 import pino from "pino";
 import crypto from "node:crypto";
 export const logger = pino({
-  level: config.loglevel,
+  level: config.logLevel,
   redact: [
     "req.headers.authorization",
     "req.headers.cookie",

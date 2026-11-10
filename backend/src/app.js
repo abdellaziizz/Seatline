@@ -1,14 +1,13 @@
-import express from "express ";
+import express from "express";
 import pool from "../src/config/db.js";
-import redisClient from "../src/config/db.js";
+import redisClient from "../src/config/redis.js";
 import { httpLogger } from "./log.js";
 const app = express();
 app.use(httpLogger);
 app.get("/health", async (_req, res) => {
-  await pool.query("SELECT 1");
-
   const [postgres, redis] = await Promise.allSettled([
-    res.json({ status: "success", db: "ok" }),
+    pool.query("SELECT 1"),
+
     redisClient.ping(),
   ]);
   const dbHealth = postgres.status === "fulfilled";
@@ -17,8 +16,9 @@ app.get("/health", async (_req, res) => {
   res.status(allHealthy ? 200 : 503).json({
     status: allHealthy ? "success" : "error",
     services: {
-      postgres: dbHealthy ? "ok" : "unreachable",
-      redis: redisHealthy ? "ok" : "unreachable",
+      postgres: dbHealth ? "ok" : "unreachable",
+      redis: redisHealth ? "ok" : "unreachable",
     },
   });
 });
+export default app;

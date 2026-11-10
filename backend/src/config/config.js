@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config({ path: "../.env", quiet: true });
+dotenv.config({ path: "backend/.env", quiet: true });
 export default {
   port: Number(process.env.PORT) || 3000,
   host: process.env.HOST || "127.0.0.1",
@@ -8,4 +8,7 @@ export default {
   logLevel:
     process.env.LOG_LEVEL ||
     (process.env.NODE_ENV === "test" ? "silent" : "info"),
+  redisPort: process.env.REDIS_PORT,
+  redisHost: process.env.REDIS_HOST,
+  redisPassword: process.env.REDIS_PASSWORD,
 };
