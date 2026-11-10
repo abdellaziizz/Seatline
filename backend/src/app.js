@@ -2,6 +2,7 @@ import express from "express";
 import pool from "../src/config/db.js";
 import redisClient from "../src/config/redis.js";
 import { httpLogger } from "./log.js";
+import errorHandler from "./controllers/errorHandler.js";
 const app = express();
 app.use(httpLogger);
 app.get("/health", async (_req, res) => {
@@ -21,4 +22,16 @@ app.get("/health", async (_req, res) => {
     },
   });
 });
+app.all("/*splat", (req, res, next) => {
+  next(
+    new AppError(
+      `Can't find ${req.originalUrl} on this server!`,
+      404,
+      "NOT_FOUND",
+    ),
+  );
+});
+
+app.use(errorHandler);
+
 export default app;
