@@ -1,6 +1,6 @@
 import AppError from "../utils/appError.js";
-const fromPgError = (err) => {
-  switch (err.code) {
+const fromPostgres = (err) => {
+  switch (err) {
     case "22P02": // invalid_text_representation, e.g. 'abc' for a bigint or a bad enum value
     case "22003": // numeric_value_out_of_range
       return new AppError("Invalid input value", 400, "INVALID_INPUT");
@@ -28,8 +28,20 @@ const fromPgError = (err) => {
   }
   return err;
 };
-// jsonwebtoken throws these from jwt.verify in authController.protect.
-const fromJwtError = (err) => {
+const fromRedis = (err) => {
+  let code = err.code;
+  switch (code) {
+    case "ECONNREFUSED":
+    case "ETIMEDOUT":
+    case "ENOTFOUND":
+      return new AppError("Redis service is currently unavailable", 503);
+    case "NOAUTH":
+    case "WRONGPASS":
+      return new AppError("Redis authentication failed", 500);
+  }
+  return err;
+};
+const fromJWT = (err) => {
   switch (err.name) {
     case "TokenExpiredError":
       return new AppError(
@@ -47,6 +59,7 @@ const fromJwtError = (err) => {
   }
   return err;
 };
+
 // express.json() errors (malformed or oversized bodies).
 const fromBodyParserError = (err) => {
   if (err.type === "entity.parse.failed")
@@ -55,27 +68,21 @@ const fromBodyParserError = (err) => {
     return new AppError("Request body is too large", 413, "PAYLOAD_TOO_LARGE");
   return err;
 };
-// eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
   let error = err;
-  if (!error.isOperational) error = fromBodyParserError(error);
-  if (!error.isOperational) error = fromJwtError(error);
-  if (!error.isOperational && error.code) error = fromPgError(error);
-  const statusCode = error.statusCode || 500;
-  if (!error.isOperational) {
-    (req.log ?? console).error(
-      { err },
-      `Unhandled error: ${req.method} ${req.originalUrl}`,
-    );
-  }
-  if (process.env.NODE_ENV === "development" && statusCode >= 500) {
+  let statusCode = error.statusCode || 500;
+  if (!error.isOperational && error.code) error = fromPostgres(error);
+  if (!error.isOperational && error.code) error = fromPostgres(error);
+  if (!error.isOperational && error.code) error = fromRedis(error);
+
+  if (config.env === "development")
     res.status(statusCode).json({
       status: error.status || "error",
       code: error.code,
       message: error.message,
       stack: error.stack,
     });
-  } else {
+  else {
     res.status(statusCode).json({
       status: error.status || "error",
       code: error.isOperational ? error.code : "INTERNAL_ERROR",
@@ -83,5 +90,4 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 };
-
 export default errorHandler;
