@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 import z from "zod";
-dotenv.config({ path: "backend/.env", quiet: true });
+dotenv.config({
+  path: "/run/media/ahmedabdelaziz/Data/Coding/P4/SeatLine/Project/.env",
+  quiet: true,
+});
 const envschema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]),
   PORT: z.coerce.number().int().positive(),
@@ -23,13 +26,12 @@ if (!parsedEnv.success) {
   for (const issue of parsedEnv.error.issues) {
     console.error(`- ${issue.path.join(".")}: ${issue.message}`);
   }
-
   process.exit(1);
 }
 
 export default {
-  nodeEnv: env.NODE_ENV,
-  port: env.PORT || 3000,
+  nodeEnv: parsedEnv.data.NODE_ENV,
+  port: parsedEnv.data.PORT || 3000,
   host: "127.0.0.1",
   env: parsedEnv.data.NODE_ENV,
   jwtSecret: process.env.JWT_SECRET,
@@ -39,16 +41,16 @@ export default {
     (process.env.NODE_ENV === "test" ? "silent" : "info"),
 
   db: {
-    host: env.DB_HOST,
-    port: env.DB_PORT,
-    user: env.DB_USER,
-    password: env.DB_PASSWORD,
-    name: env.DB_NAME,
+    host: parsedEnv.data.DB_HOST,
+    port: parsedEnv.data.DB_PORT,
+    user: parsedEnv.data.DB_USER,
+    password: parsedEnv.data.DB_PASSWORD,
+    name: parsedEnv.data.DB_NAME,
   },
 
   redis: {
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD || undefined,
+    host: parsedEnv.data.REDIS_HOST,
+    port: parsedEnv.data.REDIS_PORT,
+    password: parsedEnv.data.REDIS_PASSWORD || undefined,
   },
 };

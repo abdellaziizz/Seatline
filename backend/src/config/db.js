@@ -1,14 +1,14 @@
 import config from "./config.js";
 import pg from "pg";
-const pool = pg.Pool({
-  user: config.DB_USER,
-  password: config.DB_PASSWORD,
-  port: config.DB_PORT || 5432,
-  database: config.DB_NAME,
-  host: config.DB_HOST,
+const pool = new pg.Pool({
+  user: config.db.user,
+  password: config.db.password,
+  port: config.db.port || 5432,
+  database: config.db.name,
+  host: config.db.host,
 });
 const withTransaction = async (fn) => {
-  const client = pool.connect();
+  const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const result = await fn(client);
@@ -18,7 +18,7 @@ const withTransaction = async (fn) => {
     await client.query("ROLLBACK").catch(() => {});
     throw err;
   } finally {
-    await client.release();
+    client.release();
   }
 };
-export default { pool, withTransaction };
+export { pool, withTransaction };

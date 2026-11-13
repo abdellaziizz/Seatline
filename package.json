@@ -1,8 +1,12 @@
 {
+  "name": "seatline",
+  "version": "1.0.0",
+  "description": "Idempotent double-entry ledger API",
+  "main": "server.js",
   "scripts": {
-    "db:migrate": "node scripts/migrate.js up",
-    "db:rollback": "node scripts/migrate.js down",
-    "db:seed": "node scripts/seed.js"
+    "db:migrate": "node ./backend/src/scripts/migrate.js up",
+    "db:rollback": "node ./backend/src/scripts/migrate.js down",
+    "db:seed": "node ./backend/src/scripts/seed.js"
   },
   "dependencies": {
     "argon2": "^0.45.2",
@@ -19,6 +23,10 @@
     "prom-client": "^15.1.3",
     "zod": "^4.6.7"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@testcontainers/postgresql": "^12.2.1",

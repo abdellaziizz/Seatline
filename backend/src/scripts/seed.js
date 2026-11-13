@@ -1,4 +1,4 @@
-import pool from "../src/config/db.js";
+import { pool } from "../config/db.js";
 
 const ORGANISER_ID = "11111111-1111-4111-8111-111111111111";
 const EVENT_ID = "22222222-2222-4222-8222-222222222222";

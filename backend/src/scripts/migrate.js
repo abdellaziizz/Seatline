@@ -1,90 +1,119 @@
-import pool from "../config/db.js";
+import { pool } from "../config/db.js";
 import fs from "node:fs/promises";
 import path from "node:path";
-const migrationUrl = path.resolve("../db/migration");
-const ensureMigration = (client) => {
-  const rows =
-    client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW());`);
+
+// Resolve migration directory relative to this file
+const migrationUrl = path.resolve(import.meta.dirname, "../db/migration");
+
+const ensureMigration = async (client) => {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      name TEXT PRIMARY KEY,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 };
+
 const migrationUp = async (client) => {
-  const files = fs.readFile(migrationUrl);
-  const upFile = files
-    .filter((f) => {
-      f.endswith(".up.sql");
-    })
-    .sort();
-  for (const file in files) {
-    const rows = await client.query(
+  // Read all files inside the migration directory
+  const files = await fs.readdir(migrationUrl);
+
+  // Get only UP migration files
+  const upFiles = files.filter((file) => file.endsWith(".up.sql")).sort();
+
+  for (const file of upFiles) {
+    const { rows } = await client.query(
       "SELECT 1 FROM schema_migrations WHERE name = $1",
       [file],
     );
+
+    // Skip already applied migrations
     if (rows.length > 0) {
-      console.log("already applied");
+      console.log(`Already applied: ${file}`);
       continue;
     }
-    const sqlCode = fs.readFile(path.join(migrationUrl, upFile), "utf-8");
+
+    const sqlCode = await fs.readFile(path.join(migrationUrl, file), "utf-8");
+
     try {
       await client.query("BEGIN");
+
       await client.query(sqlCode);
 
       await client.query("INSERT INTO schema_migrations (name) VALUES ($1)", [
         file,
       ]);
-      console.log(`Applied: ${file}`);
 
       await client.query("COMMIT");
+
+      console.log(`Applied: ${file}`);
     } catch (err) {
       await client.query("ROLLBACK");
-      throw error;
+      throw err;
     }
   }
 };
+
 const migrationDown = async (client) => {
-  const rows = await client.query(`   SELECT name
+  const { rows } = await client.query(`
+    SELECT name
     FROM schema_migrations
     ORDER BY applied_at DESC, name DESC
-    LIMIT 1`);
+    LIMIT 1
+  `);
+
   if (rows.length === 0) {
-    console.log("there is no migration to rollback");
+    console.log("There is no migration to rollback");
+    return;
   }
+
   const upFile = rows[0].name;
   const downFile = upFile.replace(".up.sql", ".down.sql");
-  const sqlCode = fs.readFile(path.join(migrationUrl, downFile));
+
+  const sqlCode = await fs.readFile(path.join(migrationUrl, downFile), "utf-8");
+
   try {
     await client.query("BEGIN");
-    await client.query(sql);
+
+    await client.query(sqlCode);
 
     await client.query("DELETE FROM schema_migrations WHERE name = $1", [
       upFile,
     ]);
 
     await client.query("COMMIT");
+
     console.log(`Rolled back: ${upFile}`);
+  } catch (err) {
     await client.query("ROLLBACK");
-    throw error;
-  } catch (err) {}
+    throw err;
+  }
 };
+
 async function main() {
   const direction = process.argv[2];
+
+  if (!["up", "down"].includes(direction)) {
+    throw new Error("Use: node scripts/migrate.js up|down");
+  }
+
   const client = await pool.connect();
 
   try {
-    await ensureMigrationTable(client);
+    await ensureMigration(client);
 
     if (direction === "up") {
-      await migrateUp(client);
-    } else if (direction === "down") {
-      await migrateDown(client);
+      await migrationUp(client);
     } else {
-      throw new Error("Use: node scripts/migrate.js up|down");
+      await migrationDown(client);
     }
   } finally {
     client.release();
     await pool.end();
   }
 }
-main().catch((error) => {
-  console.error("Migration failed:", error);
+
+main().catch((err) => {
+  console.error("Migration failed:", err);
   process.exitCode = 1;
 });
