@@ -65,3 +65,26 @@ const migrationDown = async (client) => {
     throw error;
   } catch (err) {}
 };
+async function main() {
+  const direction = process.argv[2];
+  const client = await pool.connect();
+
+  try {
+    await ensureMigrationTable(client);
+
+    if (direction === "up") {
+      await migrateUp(client);
+    } else if (direction === "down") {
+      await migrateDown(client);
+    } else {
+      throw new Error("Use: node scripts/migrate.js up|down");
+    }
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+main().catch((error) => {
+  console.error("Migration failed:", error);
+  process.exitCode = 1;
+});

@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "db:migrate": "node scripts/migrate.js up",
+    "db:rollback": "node scripts/migrate.js down",
+    "db:seed": "node scripts/seed.js"
+  },
   "dependencies": {
     "argon2": "^0.45.2",
     "cors": "^2.8.6",
