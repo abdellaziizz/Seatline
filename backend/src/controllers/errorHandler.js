@@ -1,17 +1,13 @@
 import AppError from "../utils/appError.js";
+import config from "../config/config.js";
 const fromPostgres = (err) => {
-  switch (err) {
+  switch (err.code) {
     case "22P02": // invalid_text_representation, e.g. 'abc' for a bigint or a bad enum value
     case "22003": // numeric_value_out_of_range
       return new AppError("Invalid input value", 400, "INVALID_INPUT");
     case "23502": // not_null_violation
       return new AppError("A required field is missing", 400, "MISSING_FIELD");
-    case "23000": // integrity_constraint_violation, raised by the entries_immutable trigger
-      return new AppError(
-        "Ledger entries cannot be changed",
-        409,
-        "IMMUTABLE_ROW",
-      );
+
     case "23505":
       return new AppError("Resource already exists", 409, "CONFLICT");
     case "23514":
@@ -70,12 +66,13 @@ const fromBodyParserError = (err) => {
 };
 const errorHandler = (err, req, res, next) => {
   let error = err;
-  let statusCode = error.statusCode || 500;
   if (!error.isOperational && error.code) error = fromPostgres(error);
-  if (!error.isOperational && error.code) error = fromPostgres(error);
+  if (!error.isOperational) error = fromJWT(error);
+  if (!error.isOperational) error = fromBodyParserError(error);
   if (!error.isOperational && error.code) error = fromRedis(error);
+  let statusCode = error.statusCode || 500;
 
-  if (config.env === "development")
+  if (config.nodeEnv === "development")
     res.status(statusCode).json({
       status: error.status || "error",
       code: error.code,
