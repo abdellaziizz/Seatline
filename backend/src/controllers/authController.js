@@ -2,12 +2,9 @@ import jwt from "jsonwebtoken";
 import AppError from "../utils/appError.js";
 import bcrypt from "bcryptjs";
 import config from "../config/config.js";
-import { pool } from "../config/db.js";
 import { promisify } from "util";
+import { createUser, findUserByEmail, findUserById } from "../repo.js";
 
-import { createUser, findUserByEmail } from "../repo.js";
-import { bytes } from "stream/consumers";
-import { user } from "pg/lib/defaults";
 const signToken = (user) => {
   jwt.sign({ id: user.id, role: user.role }, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn,
@@ -15,7 +12,28 @@ const signToken = (user) => {
 };
 const verifyJwt = promisify(jwt.verify);
 const DUMMY_HASH = bcrypt.hashSync("Seatline-timing-equaliser", 12);
-const protect = (req, res, next) => {};
+const protect = async (req, res, next) => {
+  let token;
+  const header = req.headers.authorization;
+  if (header?.startsWith("Bearer ")) token = header.slice(7);
+  else if (req.cookies?.jwt) token = req.cookies.jwt;
+
+  if (!token)
+    return next(
+      new AppError(
+        "You are not logged in. Please log in to get access.",
+        401,
+        "UNAUTHENTICATED",
+      ),
+    );
+
+  const payload = jwt.verifyJwt(token, config.jwtSecret);
+  const currentUser = await findUserById(payload.id);
+  if (!currentUser)
+    return next(new AppError("User no longer exists", 401, "UNAUTHENTICATED"));
+  req.user = currentUser;
+  next();
+};
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role))
