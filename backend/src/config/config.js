@@ -36,7 +36,7 @@ export default {
   port: parsedEnv.data.PORT || 3000,
   host: "127.0.0.1",
   env: parsedEnv.data.NODE_ENV,
-  jwtSecret: process.env.JWT_SECRET,
+  jwtSecret: parsedEnv.data.JWT_EXPIRES_IN,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1h",
   logLevel:
     process.env.LOG_LEVEL ||

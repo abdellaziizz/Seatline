@@ -73,4 +73,4 @@ const login = async (req, res, next) => {
     data: user,
   });
 };
-export { register, requireRole, login, protect };
+export default { register, requireRole, login, protect };

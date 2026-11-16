@@ -4,7 +4,10 @@ import authController from "../controllers/authController.js";
 import validate from "../middlewares/validate.js";
 import { registerSchema, loginSchema } from "../schemas/authSchema.js";
 router.post(
+  "/register",
   validate(registerSchema),
-  "/api/auth/register",
+
   authController.register,
 );
+router.post("/login", authController.login);
+export default router;
