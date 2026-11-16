@@ -7,7 +7,7 @@ const validate = (schema) => {
       params: req.params,
     });
     if (!result.success) {
-      const message = result.error.issue
+      const message = result.error.issues
         .map((i) => `${i.path.slice(1).join(".")}: ${i.message}`)
         .join("; ");
       return next(new AppError(message, 400, "VALIDATION_ERROR"));

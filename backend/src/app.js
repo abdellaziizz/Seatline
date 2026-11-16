@@ -5,9 +5,11 @@ import { httpLogger } from "./log.js";
 import errorHandler from "./controllers/errorHandler.js";
 import AppError from "./utils/appError.js";
 import helmet from "helmet";
+import c from "cookie-parser";
 const app = express();
 app.use(express.json());
 app.use(helmet());
+app.use(c());
 app.use(httpLogger);
 app.get("/health", async (_req, res) => {
   const [postgres, redis] = await Promise.allSettled([

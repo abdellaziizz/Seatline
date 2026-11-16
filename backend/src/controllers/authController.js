@@ -6,7 +6,7 @@ import { promisify } from "util";
 import { createUser, findUserByEmail, findUserById } from "../repo.js";
 
 const signToken = (user) => {
-  jwt.sign({ id: user.id, role: user.role }, config.jwtSecret, {
+  return jwt.sign({ id: user.id, role: user.role }, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn,
   });
 };
@@ -27,7 +27,7 @@ const protect = async (req, res, next) => {
       ),
     );
 
-  const payload = jwt.verifyJwt(token, config.jwtSecret);
+  const payload = await verifyJwt(token, config.jwtSecret);
   const currentUser = await findUserById(payload.id);
   if (!currentUser)
     return next(new AppError("User no longer exists", 401, "UNAUTHENTICATED"));
@@ -37,7 +37,7 @@ const protect = async (req, res, next) => {
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role))
-      next(
+      return next(
         new AppError(
           "You do not have permission to perform this action",
           403,
@@ -48,11 +48,10 @@ const requireRole = (...roles) => {
   };
 };
 const register = async (req, res, next) => {
-  //check if email is exist or not first
-  const { email, password } = req.body;
+  const { email, password, displayName } = req.body;
   //hash the password
-  const hashedPass = bcrypt.hash(password, 12);
-  const user = await createUser(email, hashedPass);
+  const hashedPass = await bcrypt.hash(password, 12);
+  const user = await createUser(email, hashedPass, displayName);
   res
     .status(201)
     .json({ status: "success", data: user, token: signToken(user) });
@@ -61,7 +60,8 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   const { email, password } = req.body;
   const user = await findUserByEmail(email);
-  const ok = bcrypt.compare(password, user?.hash_password ?? DUMMY_HASH);
+  const dat = { ...user };
+  const ok = await bcrypt.compare(password, user?.password_hash ?? DUMMY_HASH);
   if (!user || !ok) {
     return next(
       new AppError("Incorrect email or password", 401, "INVALID_CREDENTIALS"),
