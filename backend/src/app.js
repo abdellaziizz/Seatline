@@ -8,6 +8,7 @@ import helmet from "helmet";
 import c from "cookie-parser";
 import authRouter from "./routes/authRoute.js";
 const app = express();
+
 app.use(httpLogger);
 app.use(express.json());
 app.use(helmet());
@@ -30,6 +31,7 @@ app.get("/health", async (_req, res) => {
   });
 });
 app.use("/api/auth", authRouter);
+app.use("/api/events", eventRouter);
 app.all("/*splat", (req, res, next) => {
   next(
     new AppError(
