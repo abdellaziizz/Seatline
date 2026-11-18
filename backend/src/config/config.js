@@ -10,6 +10,7 @@ const envschema = z.object({
   JWT_SECRET: z
     .string()
     .min(32, "JWT_SECRET must be at least 32 characters long"),
+  JWT_EXPIRES_IN: z.string().min(1).default("1h"),
   // PostgreSQL
   DB_HOST: z.string().min(1),
   DB_PORT: z.coerce.number().int().positive(),
@@ -36,8 +37,8 @@ export default {
   port: parsedEnv.data.PORT || 3000,
   host: "127.0.0.1",
   env: parsedEnv.data.NODE_ENV,
-  jwtSecret: parsedEnv.data.JWT_EXPIRES_IN,
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1h",
+  jwtSecret: parsedEnv.data.JWT_SECRET,
+  jwtExpiresIn: parsedEnv.data.JWT_EXPIRES_IN,
   logLevel:
     process.env.LOG_LEVEL ||
     (process.env.NODE_ENV === "test" ? "silent" : "info"),
