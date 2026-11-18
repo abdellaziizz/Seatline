@@ -4,5 +4,5 @@ import { z } from "zod";
 const eventIdParamsSchema = z.object({
   params: z.object({ id: z.uuid() }),
 });
-
-export { eventIdParamsSchema };
+const createEventSchema = z.object({ body: z.object({}) });
+export { eventIdParamsSchema, createEventSchema };
