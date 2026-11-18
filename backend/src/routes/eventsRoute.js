@@ -1,3 +1,11 @@
 import express from "express";
+import validate from "../middlewares/validate.js";
+import paginationSchema from "../schemas/paginationSchema.js";
+import getEventSeats from "../controllers/seatController.js";
+import { getEvents, getEventById } from "../controllers/eventController.js";
+import { eventIdParamsSchema } from "../schemas/eventSchema.js";
 const router = express.Router();
-router.get("events");
+router.get("/", validate(paginationSchema), getEvents);
+router.get("/:id", validate(eventIdParamsSchema), getEventById);
+router.get("/:id/seats", validate(eventIdParamsSchema), getEventSeats);
+export default router;

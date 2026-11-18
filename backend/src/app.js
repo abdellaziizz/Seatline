@@ -5,14 +5,15 @@ import { httpLogger } from "./log.js";
 import errorHandler from "./controllers/errorHandler.js";
 import AppError from "./utils/appError.js";
 import helmet from "helmet";
-import c from "cookie-parser";
+import cookieParser from "cookie-parser";
 import authRouter from "./routes/authRoute.js";
+import eventRouter from "./routes/eventsRoute.js";
 const app = express();
 
 app.use(httpLogger);
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 app.use(helmet());
-app.use(c());
+app.use(cookieParser());
 app.get("/health", async (_req, res) => {
   const [postgres, redis] = await Promise.allSettled([
     pool.query("SELECT 1"),

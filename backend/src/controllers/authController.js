@@ -3,7 +3,11 @@ import AppError from "../utils/appError.js";
 import bcrypt from "bcryptjs";
 import config from "../config/config.js";
 import { promisify } from "util";
-import { createUser, findUserByEmail, findUserById } from "../repo.js";
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+} from "../repositories/repo.js";
 
 const signToken = (user) => {
   return jwt.sign({ id: user.id, role: user.role }, config.jwtSecret, {
@@ -27,7 +31,10 @@ const protect = async (req, res, next) => {
       ),
     );
 
-  const payload = await verifyJwt(token, config.jwtSecret);
+  // Pin the algorithm so a token signed with another "alg" is rejected.
+  const payload = await verifyJwt(token, config.jwtSecret, {
+    algorithms: ["HS256"],
+  });
   const currentUser = await findUserById(payload.id);
   if (!currentUser)
     return next(new AppError("User no longer exists", 401, "UNAUTHENTICATED"));
@@ -48,10 +55,11 @@ const requireRole = (...roles) => {
   };
 };
 const register = async (req, res, next) => {
-  const { email, password, displayName } = req.body;
+  // registerSchema calls the field "name" (not displayName)
+  const { email, password, name } = req.body;
   //hash the password
   const hashedPass = await bcrypt.hash(password, 12);
-  const user = await createUser(email, hashedPass, displayName);
+  const user = await createUser(email, hashedPass, name);
   res
     .status(201)
     .json({ status: "success", data: user, token: signToken(user) });
@@ -60,17 +68,18 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   const { email, password } = req.body;
   const user = await findUserByEmail(email);
-  const dat = { ...user };
   const ok = await bcrypt.compare(password, user?.password_hash ?? DUMMY_HASH);
   if (!user || !ok) {
     return next(
       new AppError("Incorrect email or password", 401, "INVALID_CREDENTIALS"),
     );
   }
+  // Never send the hash to the client.
+  const { password_hash, ...safeUser } = user;
   res.status(200).json({
     status: "success",
     token: signToken(user),
-    data: user,
+    data: safeUser,
   });
 };
 export default { register, requireRole, login, protect };

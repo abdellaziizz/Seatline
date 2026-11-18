@@ -12,10 +12,11 @@ const validate = (schema) => {
         .join("; ");
       return next(new AppError(message, 400, "VALIDATION_ERROR"));
     }
+    // cleaned values (lowercased email, coerced numbers, defaults)
     if (result.data.body !== undefined) req.body = result.data.body;
-    // cleaned values (lowercased email, uppercased currency)
-
-    req.validated = req.body;
+    // Express 5: req.query is a read-only getter -> assigning it throws.
+    // Read parsed query values from req.validated.query instead.
+    req.validated = result.data;
     next();
   };
 };

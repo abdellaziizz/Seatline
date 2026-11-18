@@ -9,5 +9,5 @@ router.post(
 
   authController.register,
 );
-router.post("/login", authController.login);
+router.post("/login", validate(loginSchema), authController.login);
 export default router;
