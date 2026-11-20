@@ -1,3 +1,6 @@
+//BETTER TO SEPERATE THE QUERIES in seperated functions and then use them in the transactions
+
+import { withParser } from "zod/v4/core";
 import { pool, withTransaction } from "../config/db.js";
 
 const countEvents = async () => {
@@ -151,6 +154,7 @@ const createEvent = async ({
     return { ...event, seatCount: seats.length };
   });
 };
+// Hold queries moved to repositories/holdRepository.js
 export {
   countEvents,
   findEvents,

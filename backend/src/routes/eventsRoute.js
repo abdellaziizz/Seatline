@@ -14,6 +14,8 @@ import {
   deleteEvent,
   updateEvent,
 } from "../controllers/eventController.js";
+import { postHold } from "../controllers/holdController.js";
+import { createHoldSchema } from "../schemas/holdSchema.js";
 import authController from "../controllers/authController.js";
 const router = express.Router();
 
@@ -29,7 +31,23 @@ router.get("/:id/seats", validate(eventIdParamsSchema), getEventSeats);
 
 // organiser only (ownership is checked in SQL: organiser_id = req.user.id)
 router.post("/", ...organiserOnly, validate(createEventSchema), postEvent);
-router.patch("/:id", ...organiserOnly, validate(updateEventSchema), updateEvent);
-router.delete("/:id", ...organiserOnly, validate(eventIdParamsSchema), deleteEvent);
-
+router.patch(
+  "/:id",
+  ...organiserOnly,
+  validate(updateEventSchema),
+  updateEvent,
+);
+router.delete(
+  "/:id",
+  ...organiserOnly,
+  validate(eventIdParamsSchema),
+  deleteEvent,
+);
+// any logged-in user (NOT authController.login: that is the login handler)
+router.post(
+  "/:id/holds",
+  authController.protect,
+  validate(createHoldSchema),
+  postHold,
+);
 export default router;

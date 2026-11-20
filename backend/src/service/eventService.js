@@ -1,5 +1,8 @@
 import { countEvents, findEvents } from "../repositories/eventRepository.js";
-const getEvents = async (page, limit) => {
+
+// Named listEvents (not findEvents) so it does not clash with the
+// repository function findEvents imported above.
+const listEvents = async (page, limit) => {
   const offset = (page - 1) * limit;
   // await the Promise.all (not each item), so both queries run in parallel.
   // The order of the results matches the order of the array.
@@ -22,4 +25,5 @@ const getEvents = async (page, limit) => {
     },
   };
 };
-export default getEvents;
+// Hold logic moved to service/holdService.js
+export { listEvents };

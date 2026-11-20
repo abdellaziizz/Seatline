@@ -72,11 +72,15 @@ const errorHandler = (err, req, res, next) => {
   if (!error.isOperational && error.code) error = fromRedis(error);
   let statusCode = error.statusCode || 500;
 
+  // Optional extra info for operational errors, e.g. which seats were taken.
+  const details = error.isOperational ? error.details : undefined;
+
   if (config.nodeEnv === "development")
     res.status(statusCode).json({
       status: error.status || "error",
       code: error.code,
       message: error.message,
+      details,
       stack: error.stack,
     });
   else {
@@ -84,6 +88,7 @@ const errorHandler = (err, req, res, next) => {
       status: error.status || "error",
       code: error.isOperational ? error.code : "INTERNAL_ERROR",
       message: error.isOperational ? error.message : "Something went wrong!",
+      details,
     });
   }
 };

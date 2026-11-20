@@ -1,4 +1,4 @@
-import getEventService from "../service/eventService.js";
+import { listEvents } from "../service/eventService.js";
 import * as eventRepo from "../repositories/eventRepository.js";
 import AppError from "../utils/appError.js";
 
@@ -6,7 +6,7 @@ const getEvents = async (req, res, next) => {
   // Express 5: req.query is read-only, so validate() puts the parsed
   // (coerced + defaulted) values in req.validated.query instead.
   const { page, limit } = req.validated.query;
-  const result = await getEventService(page, limit);
+  const result = await listEvents(page, limit);
   return res.status(200).json({ status: "success", data: result });
 };
 
@@ -45,5 +45,5 @@ const deleteEvent = async (req, res, next) => {
   // 204 = No Content: the response must not have a body.
   return res.status(204).end();
 };
-
+// Hold handlers moved to controllers/holdController.js
 export { getEvents, getEventById, postEvent, deleteEvent, updateEvent };
