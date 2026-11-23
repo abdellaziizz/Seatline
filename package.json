@@ -6,7 +6,10 @@
   "scripts": {
     "db:migrate": "node ./backend/src/scripts/migrate.js up",
     "db:rollback": "node ./backend/src/scripts/migrate.js down",
-    "db:seed": "node ./backend/src/scripts/seed.js"
+    "db:seed": "node ./backend/src/scripts/seed.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:integration": "vitest run backend/test/integration"
   },
   "dependencies": {
     "argon2": "^0.45.2",

@@ -1,32 +1,22 @@
 -- =============================================================================
 -- Seatline: initial schema (migration 0001, UP)
--- Target: PostgreSQL 18
---
+
 -- Ground rules this schema enforces:
 --   * PostgreSQL is the ONLY source of truth for seats, holds, orders, tickets.
 --     Redis never decides whether a seat can be sold.
 --   * A seat can be sold at most once:  tickets UNIQUE (event_id, seat_id).
 --   * Hold expiry is LAZY: an expired hold counts as "available" in every
 --     query predicate, so correctness never depends on the sweeper.
---   * All money is stored in minor units (integer piastres/cents), never float.
---   * All timestamps are timestamptz and are compared against the DATABASE
 --     clock (app_now()), never the Node.js clock.
 -- =============================================================================
-
--- No BEGIN/COMMIT here: the runner wraps the file in one transaction
--- (Kysely Migrator does; with psql use --single-transaction / -1).
-
 -- -----------------------------------------------------------------------------
 -- 0. Extensions
 -- -----------------------------------------------------------------------------
--- citext: case-insensitive email so "Ahmed@x.com" and "ahmed@x.com" collide.
+-- citext: case-insensitive email 
 CREATE EXTENSION IF NOT EXISTS citext;
--- uuidv7() is built into PostgreSQL 18 (time-ordered UUIDs, index-friendly).
--- No extension needed.
 
 -- -----------------------------------------------------------------------------
 -- 1. Enum types
---    (Adding a value later: ALTER TYPE ... ADD VALUE 'x'; in its own migration.)
 -- -----------------------------------------------------------------------------
 CREATE TYPE user_role      AS ENUM ('customer', 'organiser', 'admin');
 CREATE TYPE event_status   AS ENUM ('draft', 'published', 'cancelled');
@@ -70,7 +60,7 @@ $$;
 CREATE TABLE users (
   id             uuid        PRIMARY KEY DEFAULT uuidv7(),
   email          citext      NOT NULL,
-  password_hash  text        NOT NULL,           -- argon2id / bcrypt, never plain
+  password_hash  text        NOT NULL,           
   display_name   text        NOT NULL,
   role           user_role   NOT NULL DEFAULT 'customer',
   created_at     timestamptz NOT NULL DEFAULT now(),
@@ -88,7 +78,6 @@ CREATE TRIGGER users_set_updated_at
 -- -----------------------------------------------------------------------------
 -- 4. events
 --    organiser_id gives the ownership check: organisers manage only their events
---    (WHERE id = $1 AND organiser_id = $currentUser).
 -- -----------------------------------------------------------------------------
 CREATE TABLE events (
   id            uuid         PRIMARY KEY DEFAULT uuidv7(),
