@@ -9,7 +9,7 @@
     "db:seed": "node ./backend/src/scripts/seed.js",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:integration": "vitest run backend/test/integration"
+    "test:integration": "vitest run backend/tests/integration"
   },
   "dependencies": {
     "argon2": "^0.45.2",

@@ -1,4 +1,4 @@
-import { pool } from "../config/db.js";
+import { getPool, closePool } from "../config/db.js";
 
 const ORGANISER_ID = "11111111-1111-4111-8111-111111111111";
 const EVENT_ID = "22222222-2222-4222-8222-222222222222";
@@ -47,7 +47,7 @@ function generateSeats() {
 }
 
 async function seed() {
-  const client = await pool.connect();
+  const client = await getPool().connect();
 
   try {
     await client.query("BEGIN");
@@ -170,7 +170,7 @@ async function seed() {
     throw error;
   } finally {
     client.release();
-    await pool.end();
+    await closePool();
   }
 }
 

@@ -1,9 +1,14 @@
 import dotenv from "dotenv";
+import path from "node:path";
 import z from "zod";
-dotenv.config({
-  path: "/run/media/ahmedabdelaziz/Data/Coding/P4/SeatLine/Project/.env",
-  quiet: true,
-});
+
+// The test setup (backend/tests/vitest.setup.js) sets NODE_ENV=test and the
+if (process.env.NODE_ENV !== "test") {
+  dotenv.config({
+    path: path.resolve(import.meta.dirname, "../../../.env"),
+    quiet: true,
+  });
+}
 const envschema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]),
   PORT: z.coerce.number().int().positive(),

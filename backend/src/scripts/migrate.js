@@ -1,4 +1,4 @@
-import { pool } from "../config/db.js";
+import { getPool, closePool } from "../config/db.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -90,6 +90,19 @@ const migrationDown = async (client) => {
   }
 };
 
+// Run all pending UP migrations against ANY pool you pass in.
+// The test setup calls this with the Testcontainers pool (dependency injection),
+// so tests reuse this exact code instead of a copy.
+const migrateUp = async (pool) => {
+  const client = await pool.connect();
+  try {
+    await ensureMigration(client);
+    await migrationUp(client);
+  } finally {
+    client.release();
+  }
+};
+
 async function main() {
   const direction = process.argv[2];
 
@@ -97,7 +110,7 @@ async function main() {
     throw new Error("Use: node scripts/migrate.js up|down");
   }
 
-  const client = await pool.connect();
+  const client = await getPool().connect();
 
   try {
     await ensureMigration(client);
@@ -109,11 +122,18 @@ async function main() {
     }
   } finally {
     client.release();
-    await pool.end();
+    await closePool();
   }
 }
 
-main().catch((err) => {
-  console.error("Migration failed:", err);
-  process.exitCode = 1;
-});
+// Only run main() when this file is executed directly
+// (`node backend/src/scripts/migrate.js up`), NOT when a test imports it.
+// import.meta.main is true only for the entry file (Node 24+).
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error("Migration failed:", err);
+    process.exitCode = 1;
+  });
+}
+
+export { ensureMigration, migrationUp, migrationDown, migrateUp };

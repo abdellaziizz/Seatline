@@ -1,7 +1,7 @@
 import app from "./app.js";
 import config from "../src/config/config.js";
 import { logger } from "./log.js";
-import { pool } from "../src/config/db.js";
+import { closePool } from "./config/db.js";
 import errorHandler from "./controllers/errorHandler.js";
 import Redisclient from "./config/redis.js";
 const server = app.listen(config.port, config.host, () => {
@@ -10,7 +10,7 @@ const server = app.listen(config.port, config.host, () => {
 const shutdown = (signal, code = 0) => {
   logger.info({ signal }, "Shutting down");
   server.close(async () => {
-    await pool.end().catch(() => {});
+    await closePool().catch(() => {});
     await Redisclient.quit().catch(() => {});
     logger.info("All connections closed");
 

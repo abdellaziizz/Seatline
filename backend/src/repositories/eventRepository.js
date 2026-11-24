@@ -1,18 +1,18 @@
 //BETTER TO SEPERATE THE QUERIES in seperated functions and then use them in the transactions
 
 import { withParser } from "zod/v4/core";
-import { pool, withTransaction } from "../config/db.js";
+import { getPool, withTransaction } from "../config/db.js";
 
 const countEvents = async () => {
   // Same WHERE as findEvents, otherwise total/totalPages are wrong.
   // COUNT(*) is bigint -> pg returns it as a string, so convert it here.
-  const result = await pool.query(
+  const result = await getPool().query(
     "SELECT COUNT(*) AS count FROM events WHERE status = 'published'",
   );
   return Number(result.rows[0].count);
 };
 const findEvents = async (limit, offset) => {
-  const result = await pool.query(
+  const result = await getPool().query(
     `SELECT *
 FROM events
 WHERE status = 'published'
@@ -23,7 +23,7 @@ LIMIT $1 OFFSET $2`,
   return result.rows;
 };
 const findEventsById = async (id) => {
-  const result = await pool.query(
+  const result = await getPool().query(
     `SELECT *
 FROM events
 WHERE id = $1`,
@@ -57,7 +57,7 @@ const updateEvent = async (eventId, organiserId, fields) => {
   values.push(eventId, organiserId);
   // updated_at is set by the events_set_updated_at trigger.
   // organiser_id in the WHERE = ownership check (not owner -> 0 rows -> 404).
-  const result = await pool.query(
+  const result = await getPool().query(
     `UPDATE events
 SET ${setParts.join(", ")}
 WHERE id = $${values.length - 1}
@@ -69,7 +69,7 @@ RETURNING *`,
 };
 
 const deleteEvent = async (eventId, organiserId) => {
-  const result = await pool.query(
+  const result = await getPool().query(
     `DELETE FROM events
 WHERE id = $1
   AND organiser_id = $2

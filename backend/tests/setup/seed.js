@@ -1,10 +1,12 @@
-import { pool } from "../config/db.js";
-const resetDatabase = () => {};
+import { pool } from "../../src/config/db.js";
+
 const ORGANISER_ID = "11111111-1111-4111-8111-111111111111";
 const EVENT_ID = "22222222-2222-4222-8222-222222222222";
-
 const ORGANISER_EMAIL = "seed-organiser@seatline.local";
 
+// seed().catch(() => {
+//   process.exitCode = 1;
+// });
 function generateSeats() {
   const seats = [];
   let seatId = 1;
@@ -45,17 +47,14 @@ function generateSeats() {
 
   return seats;
 }
-
-async function seed() {
+const seedTestData = async () => {
+  //1.create test users
   const client = await pool.connect();
-
+  //create developer organiser "user"
   try {
     await client.query("BEGIN");
-
-    // 1. Create the development organiser.
-    // This account is for database seeding, not real authentication.
     await client.query(
-      `
+      ` 
         INSERT INTO users (
           id,
           email,
@@ -73,36 +72,33 @@ async function seed() {
         "SeatLine Seed Organiser",
       ],
     );
-
-    const { rows: users } = await client.query(
-      "SELECT id FROM users WHERE email = $1",
+    const { rows: user } = await client.query(
+      `SELECT id FROM users WHERE email = $1`,
       [ORGANISER_EMAIL],
     );
-
-    const organiserId = users[0].id;
-
-    // 2. Create one event.
+    const organiserId = user[0].id;
     const startsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+    //2.create one event
     await client.query(
       `
-        INSERT INTO events (
-          id,
-          organiser_id,
-          name,
-          description,
-          venue_name,
-          currency,
-          status,
-          starts_at,
-          on_sale_at
-        )
-        VALUES (
-          $1, $2, $3, $4, $5, 'EGP',
-          'published', $6, NOW()
-        )
-        ON CONFLICT (id) DO NOTHING
-      `,
+         INSERT INTO events (
+           id,
+           organiser_id,
+           name,
+           description,
+           venue_name,
+           currency,
+           status,
+           starts_at,
+           on_sale_at
+         )
+         VALUES (
+           $1, $2, $3, $4, $5, 'EGP',
+           'published', $6, NOW()
+)
+         ON CONFLICT (id) DO NOTHING
+       `,
       [
         EVENT_ID,
         organiserId,
@@ -112,18 +108,16 @@ async function seed() {
         startsAt,
       ],
     );
-
-    // 3. Generate 500 seats.
+    const event = await client.query(`SELECT * FROM events where id= $1`, [
+      EVENT_ID,
+    ]);
+    //3.create seats
     const seats = generateSeats();
-
-    // 4. Prepare arrays for bulk insertion.
     const seatIds = seats.map((s) => s.seatId);
     const sections = seats.map((s) => s.section);
     const rows = seats.map((s) => s.row);
     const numbers = seats.map((s) => s.number);
     const prices = seats.map((s) => s.priceMinor);
-
-    // 5. Insert seats in one database query.
     await client.query(
       `
         INSERT INTO event_seats (
@@ -170,10 +164,6 @@ async function seed() {
     throw error;
   } finally {
     client.release();
-    await pool.end();
+    // await pool.end();
   }
-}
-
-seed().catch(() => {
-  process.exitCode = 1;
-});
+};

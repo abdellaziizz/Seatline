@@ -1,32 +1,35 @@
-// Responsible for start and stop a temporary PostgreSQL instance.
-//1.start postgres 18 container
-//2.create pg.pool
-//3.configure max at least 10
-//4.return that container and pool with closing after testing
-import { postgresSqlContainer } from "@testcontainers/postgresql";
-import { Pool } from "pg";
+// Responsible for starting and stopping a temporary PostgreSQL instance,
+// and for INJECTING its pool into the app (dependency injection).
+//
+// 1. start a postgres 18 container
+// 2. create a pg.Pool for it (max 20: concurrency tests need many connections)
+// 3. run the real migrations on it (reuses src/scripts/migrate.js)
+// 4. setPool(pool): from now on ALL app code (repositories, withTransaction)
+//    talks to this container, never to the .env database
+// 5. stopTestDatabase(): undo the injection, close the pool, stop the container
+import { PostgreSqlContainer } from "@testcontainers/postgresql";
+import pg from "pg";
+import { setPool } from "../../src/config/db.js";
+import { migrateTestDatabase } from "./migrate.js";
 
 const startTestDatabase = async () => {
-  let container;
-  let connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    container = await new postgresSqlContainer("postgres:18-alpine")
-      .withDatabase("seatline_test")
-      .withUsername("seatline")
-      .withPassword("seatline_test_password")
-      .start();
-    connectionString = container.getConnectionUri();
-  }
-  process.env.NODE_ENV = "test";
-  process.env.ENV_FILE = "/dev/null"; // never read the developer's config.env in tests
-  process.env.JWT_SECRET ??= "test-secret-not-for-production-0123456789";
-  process.env.JWT_EXPIRES_IN ??= "15m";
-  if (process.env.TEST_DATABASE_URL) {
-    process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
-  }
-  const pool = new Pool({ connectionString, max: 20 });
+  const container = await new PostgreSqlContainer("postgres:18-alpine")
+    .withDatabase("seatline_test")
+    .withUsername("seatline")
+    .withPassword("seatline_test")
+    .start();
+
+  // One source of truth for host/port/user/password: the container itself.
+  const pool = new pg.Pool({
+    connectionString: container.getConnectionUri(),
+    max: 20,
+  });
+
   try {
-    pool.query("SELECT now()");
+    await pool.query("SELECT 1");
+    await migrateTestDatabase(pool);
+    // THE injection: the app now uses the container's pool.
+    setPool(pool);
     return { container, pool };
   } catch (err) {
     await pool.end();
@@ -34,8 +37,11 @@ const startTestDatabase = async () => {
     throw err;
   }
 };
-const shutDown = async ({ container, pool }) => {
-  await container?.stop;
-  await pool?.end();
+
+const stopTestDatabase = async ({ container, pool } = {}) => {
+  setPool(null); // undo the injection
+  await pool?.end(); // close connections first...
+  await container?.stop(); // ...then stop the database they point to
 };
-export { startTestDatabase, shutDown };
+
+export { startTestDatabase, stopTestDatabase };

@@ -1,5 +1,5 @@
 import express from "express";
-import { pool } from "../src/config/db.js";
+import { getPool } from "../src/config/db.js";
 import redisClient from "../src/config/redis.js";
 import { httpLogger } from "./log.js";
 import errorHandler from "./controllers/errorHandler.js";
@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(cookieParser());
 app.get("/health", async (_req, res) => {
   const [postgres, redis] = await Promise.allSettled([
-    pool.query("SELECT 1"),
+    getPool().query("SELECT 1"),
 
     redisClient.ping(),
   ]);
