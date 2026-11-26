@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import authRouter from "./routes/authRoute.js";
 import eventRouter from "./routes/eventsRoute.js";
 import holdRouter from "./routes/holdRoutes.js";
+import orderRouter from "./routes/orderRoutes.js";
 const app = express();
 
 app.use(httpLogger);
@@ -35,6 +36,8 @@ app.get("/health", async (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/holds", holdRouter);
+app.use("/api/orders", orderRouter);
+
 app.all("/*splat", (req, res, next) => {
   next(
     new AppError(
