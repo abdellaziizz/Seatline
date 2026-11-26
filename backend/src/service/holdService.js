@@ -2,18 +2,6 @@ import { withTransaction } from "../config/db.js";
 import AppError from "../utils/appError.js";
 import * as holdRepo from "../repositories/holdRepository.js";
 
-/*
-  POST /events/:id/holds  (all-or-nothing)
-  1. auth + validate seatIds (route middlewares)
-  2. ONE transaction:
-     - check the event is on sale
-     - INSERT the hold ... RETURNING
-     - UPDATE the seats ... RETURNING
-     - compare returned row count with requested seats
-       different -> THROW inside the transaction -> withTransaction ROLLBACKs
-       (no seats held, no hold row left behind)
-  3. commit -> 201
-*/
 const createHold = async (eventId, userId, seatIds) => {
   // Sorted -> concurrent requests lock overlapping seats in the same order
   // (reduces deadlock risk).
@@ -56,7 +44,6 @@ const createHold = async (eventId, userId, seatIds) => {
   });
 };
 
-// DELETE /holds/:id
 const releaseHold = async (holdId, userId) => {
   return withTransaction(async (client) => {
     const hold = await holdRepo.markHoldReleased(client, holdId, userId);

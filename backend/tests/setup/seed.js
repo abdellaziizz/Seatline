@@ -1,5 +1,3 @@
-import { pool } from "../../src/config/db.js";
-
 const ORGANISER_ID = "11111111-1111-4111-8111-111111111111";
 const EVENT_ID = "22222222-2222-4222-8222-222222222222";
 const ORGANISER_EMAIL = "seed-organiser@seatline.local";
@@ -47,7 +45,7 @@ function generateSeats() {
 
   return seats;
 }
-const seedTestData = async () => {
+const seedTestData = async (pool) => {
   //1.create test users
   const client = await pool.connect();
   //create developer organiser "user"
@@ -164,6 +162,5 @@ const seedTestData = async () => {
     throw error;
   } finally {
     client.release();
-    // await pool.end();
   }
 };
